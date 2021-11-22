@@ -2,10 +2,12 @@ package ru.alexeySapunov.netty.server;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import ru.alexeySapunov.netty.common.message.*;
 
-import java.util.Date;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 
-public class ServerChannelInboundHandler extends SimpleChannelInboundHandler<String> {
+public class ServerChannelInboundHandler extends SimpleChannelInboundHandler<Message> {
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) {
@@ -28,24 +30,27 @@ public class ServerChannelInboundHandler extends SimpleChannelInboundHandler<Str
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, String msg) {
-        System.out.println("Incoming massage from client: " + msg);
-        ctx.writeAndFlush(" " + new Date());
-    }
+    protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws IOException {
+        if(msg instanceof TextMessage) {
+            TextMessage message = (TextMessage) msg;
+            System.out.println("Incoming text message from client: " + message.getText());
+        }
 
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        super.channelReadComplete(ctx);
-    }
+        if(msg instanceof DateMessage) {
+            DateMessage message = (DateMessage) msg;
+            System.out.println("Incoming date message from client: " + message.getDate());
+        }
 
-    @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        super.userEventTriggered(ctx, evt);
-    }
-
-    @Override
-    public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
-        super.channelWritabilityChanged(ctx);
+        if (msg instanceof DownloadFileRequestMessage) {
+            var message = (DownloadFileRequestMessage) msg;
+            try(RandomAccessFile accessFile = new RandomAccessFile(message.getPath(), "r")) {
+                final FileMessage fileMessage = new FileMessage();
+                byte[] content = new byte[(int) accessFile.length()];
+                accessFile.read(content);
+                fileMessage.setContent(content);
+                ctx.writeAndFlush(fileMessage);
+            }
+        }
     }
 
     @Override

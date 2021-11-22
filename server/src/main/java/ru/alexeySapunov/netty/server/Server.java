@@ -9,8 +9,8 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import io.netty.handler.codec.bytes.ByteArrayDecoder;
-import io.netty.handler.codec.bytes.ByteArrayEncoder;
+import ru.alexeySapunov.netty.common.handler.JsonDecoder;
+import ru.alexeySapunov.netty.common.handler.JsonEncoder;
 
 public class Server {
     public static void main(String[] args) throws InterruptedException {
@@ -30,10 +30,8 @@ public class Server {
                             ch.pipeline().addLast(
                                     new LengthFieldBasedFrameDecoder(512, 0, 2, 0, 2),
                                     new LengthFieldPrepender(2),
-                                    new ByteArrayDecoder(),
-                                    new ByteArrayEncoder(),
-                                    new ServerStringDecoder(),
-                                    new ServerStringEncoder(),
+                                    new JsonDecoder(),
+                                    new JsonEncoder(),
                                     new ServerChannelInboundHandler()
                             );
                         }

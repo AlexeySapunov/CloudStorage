@@ -6,9 +6,12 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import io.netty.handler.codec.string.StringDecoder;
-import io.netty.handler.codec.string.StringEncoder;
+import ru.alexeySapunov.netty.common.handler.JsonDecoder;
+import ru.alexeySapunov.netty.common.handler.JsonEncoder;
+import ru.alexeySapunov.netty.common.message.*;
 
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.Date;
 
 public class Client {
@@ -28,12 +31,18 @@ public class Client {
                             ch.pipeline().addLast(
                                     new LengthFieldBasedFrameDecoder(512, 0, 2, 0, 2),
                                     new LengthFieldPrepender(2),
-                                    new StringEncoder(),
-                                    new StringDecoder(),
-                                    new SimpleChannelInboundHandler<String>() {
+                                    new JsonDecoder(),
+                                    new JsonEncoder(),
+                                    new SimpleChannelInboundHandler<Message>() {
                                         @Override
-                                        protected void channelRead0(ChannelHandlerContext ctx, String msg) {
-                                            System.out.println("Incoming massage from server: " + msg);
+                                        protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws IOException {
+                                            if (msg instanceof FileMessage) {
+                                                var message = (FileMessage) msg;
+                                                try(final RandomAccessFile accessFile = new RandomAccessFile("file", "rw")) {
+                                                    accessFile.write(message.getContent());
+                                                }
+                                                ctx.close();
+                                            }
                                         }
                                     }
                             );
@@ -42,9 +51,20 @@ public class Client {
                     .option(ChannelOption.SO_KEEPALIVE, true);
             final Channel channel = bootstrap.connect("localhost", 9000).sync().channel();
 
-            while (true) {
-                channel.writeAndFlush("new massage from client: " + new Date());
-                Thread.sleep(5000);
+           while (true) {
+                final DownloadFileRequestMessage message = new DownloadFileRequestMessage();
+                message.setPath("C:\\Java\\netty\\test.json");
+                channel.writeAndFlush(message);
+
+                final TextMessage textMessage = new TextMessage();
+                textMessage.setText("new text message from client");
+                channel.writeAndFlush(textMessage);
+
+                final DateMessage dateMessage = new DateMessage();
+                dateMessage.setDate(new Date());
+                channel.writeAndFlush(dateMessage);
+
+                Thread.sleep(1000);
             }
         } finally {
             worker.shutdownGracefully();
