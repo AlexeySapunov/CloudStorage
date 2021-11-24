@@ -12,7 +12,6 @@ import ru.alexeySapunov.netty.common.message.*;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.Date;
 
 public class Client {
     public static void main(String[] args) throws InterruptedException {
@@ -29,18 +28,27 @@ public class Client {
                         @Override
                         protected void initChannel(NioSocketChannel ch) {
                             ch.pipeline().addLast(
-                                    new LengthFieldBasedFrameDecoder(512, 0, 2, 0, 2),
-                                    new LengthFieldPrepender(2),
+                                    new LengthFieldBasedFrameDecoder(1024 * 1024, 0, 3, 0, 3),
+                                    new LengthFieldPrepender(3),
                                     new JsonDecoder(),
                                     new JsonEncoder(),
                                     new SimpleChannelInboundHandler<Message>() {
                                         @Override
                                         protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws IOException {
+                                            if (msg instanceof TextMessage) {
+                                                System.out.println("Receive message " + ((TextMessage) msg).getText());
+                                            }
+
                                             if (msg instanceof FileMessage) {
+                                                System.out.println("New incoming file download message");
                                                 var message = (FileMessage) msg;
                                                 try(final RandomAccessFile accessFile = new RandomAccessFile("file", "rw")) {
+                                                    accessFile.seek(message.getStartPosition());
                                                     accessFile.write(message.getContent());
                                                 }
+                                            }
+
+                                            if (msg instanceof EndFileDownloadMessage) {
                                                 ctx.close();
                                             }
                                         }
@@ -49,23 +57,14 @@ public class Client {
                         }
                     })
                     .option(ChannelOption.SO_KEEPALIVE, true);
-            final Channel channel = bootstrap.connect("localhost", 9000).sync().channel();
 
-           while (true) {
-                final DownloadFileRequestMessage message = new DownloadFileRequestMessage();
-                message.setPath("C:\\Java\\netty\\test.json");
-                channel.writeAndFlush(message);
+            System.out.println("Client started");
 
-                final TextMessage textMessage = new TextMessage();
-                textMessage.setText("new text message from client");
-                channel.writeAndFlush(textMessage);
-
-                final DateMessage dateMessage = new DateMessage();
-                dateMessage.setDate(new Date());
-                channel.writeAndFlush(dateMessage);
-
-                Thread.sleep(1000);
-            }
+            final ChannelFuture channel = bootstrap.connect("localhost", 9000).sync();
+            final DownloadFileRequestMessage message = new DownloadFileRequestMessage();
+            message.setPath("C:\\Java\\netty\\bigFile.txt");
+            channel.channel().writeAndFlush(message);
+            channel.channel().closeFuture().sync();
         } finally {
             worker.shutdownGracefully();
         }

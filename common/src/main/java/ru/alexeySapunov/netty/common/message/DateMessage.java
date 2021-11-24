@@ -4,13 +4,13 @@ import java.util.Date;
 
 public class DateMessage extends Message {
 
-    private Date date;
+    private final Date date;
+
+    public DateMessage(Date date) {
+        this.date = date;
+    }
 
     public Date getDate() {
         return date;
-    }
-
-    public void setDate(Date date) {
-        this.date = date;
     }
 }

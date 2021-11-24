@@ -12,14 +12,19 @@ import io.netty.handler.codec.LengthFieldPrepender;
 import ru.alexeySapunov.netty.common.handler.JsonDecoder;
 import ru.alexeySapunov.netty.common.handler.JsonEncoder;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class Server {
     public static void main(String[] args) throws InterruptedException {
         new Server().run();
     }
 
     private void run() throws InterruptedException {
-        NioEventLoopGroup bossGroup = new NioEventLoopGroup(1);
+        NioEventLoopGroup bossGroup = new NioEventLoopGroup();
         NioEventLoopGroup workersGroup = new NioEventLoopGroup();
+        final ExecutorService threadPool = Executors.newCachedThreadPool();
+
         try {
             ServerBootstrap serverBootstrap = new ServerBootstrap()
                     .group(bossGroup, workersGroup)
@@ -28,11 +33,11 @@ public class Server {
                         @Override
                         protected void initChannel(NioSocketChannel ch) {
                             ch.pipeline().addLast(
-                                    new LengthFieldBasedFrameDecoder(512, 0, 2, 0, 2),
-                                    new LengthFieldPrepender(2),
+                                    new LengthFieldBasedFrameDecoder(1024 * 1024, 0, 3, 0, 3),
+                                    new LengthFieldPrepender(3),
                                     new JsonDecoder(),
                                     new JsonEncoder(),
-                                    new ServerChannelInboundHandler()
+                                    new ServerChannelInboundHandler(threadPool)
                             );
                         }
                     })
@@ -45,6 +50,7 @@ public class Server {
         } finally {
             bossGroup.shutdownGracefully();
             workersGroup.shutdownGracefully();
+            threadPool.shutdownNow();
         }
     }
 }
