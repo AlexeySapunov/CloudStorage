@@ -1,66 +1,93 @@
 package ru.alexeySapunov.netty.common.dataBase;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
 
-public class ScannerAuth implements AuthService {
+public class ScannerAuth extends Client {
 
     private static final Scanner scanner = new Scanner(System.in);
+    private static final DBAuthService dataBase = new DBAuthService();
+    private static final Client client = new Client();
 
-    private static String name;
-    private static String login;
-    private static String password;
+    public void signUpNewClients() throws SQLException {
 
-    public String regNewClients(final String login, final String password) throws SQLException {
+        System.out.println("Welcome, please sign up");
 
-        while (true) {
-            setName();
-            setLogin();
-            setPassword();
+        String login = scanner.nextLine();
+        String password = scanner.nextLine();
 
-            if (name.equals(new DBAuthService().regNewClients(login, password))) {
-                System.out.println("Such name already exists, please enter new name");
-                regNewClients(login, password);
-            } else {
-                System.out.println("Client " + getName() + " successfully registered");
-                new DBAuthService().regNewClients(login, password);
-            }
+        if (!login.equals("") && password.equals("")) {
+            loginClients(login, password);
+        } else {
+            System.out.println("Please, log in");
         }
-    }
 
-    public void authClients(final String login, final String password) throws SQLException {
-
-        while (true) {
-            setName();
-            setLogin();
-            setPassword();
-
-            if (name.equals(new DBAuthService().regNewClients(login, password))) {
-                System.out.println("Welcome, " + getName());
-                new DBAuthService().authClients(login, password);
-            } else {
-                System.out.println("Incorrect login or password, please, sign up");
-                regNewClients(login, password);
-            }
+        try {
+            dataBase.getNewClients(client);
+        } catch (SQLException throwable) {
+            throwable.printStackTrace();
         }
+
+//        setName();
+//        setLogin();
+//        setPassword();
+//
+//        if (name.equals(dataBase.getClients(login, password, clientName))) {
+//            System.out.println("Such name already exists, please enter new name or log in.\n" +
+//                    "If you want log in, please enter LOG.\n" +
+//                    "If you want continue sign up, please enter REG");
+//            String str = scanner.nextLine();
+//            if (str.equals("LOG")) {
+//                loginClients(login, password, clientName);
+//            } else {
+//                regNewClients(login, password, clientName);
+//            }
+//        } else {
+//            dataBase.signUpNewClients(log, pass, name);
+//            System.out.println("Client " + getName() + " successfully registered");
+//            loginClients(login, password, clientName);
+//        }
     }
 
-    private static void setName() {
-        System.out.println("Enter your name: ");
-        name = scanner.nextLine();
-    }
+    public void loginClients(String login, String password) throws SQLException {
 
-    private static void setLogin() {
-        System.out.println("Enter your login: ");
-        ScannerAuth.login = scanner.nextLine();
-    }
+        System.out.println("Welcome, please log in");
 
-    private static void setPassword() {
-        System.out.println("Enter your password: ");
-        ScannerAuth.password = scanner.nextLine();
-    }
+        client.setLog(login);
+        client.setPass(password);
+        ResultSet result = dataBase.getClients(client);
 
-    private static String getName() {
-        return name;
+        int counter = 0;
+
+        try {
+            while (result.next()) {
+                counter++;
+            }
+        } catch (SQLException throwable) {
+            throwable.printStackTrace();
+        }
+
+        if (counter >= 1) {
+            System.out.println("Client " + client.getName() + " logged in successfully");
+        }
+
+//        setName();
+//        setLogin();
+//        setPassword();
+//
+//        if (name.equals(dataBase.getClients(login, password, clientName))) {
+//            System.out.println("Welcome, " + getName());
+//        } else {
+//            System.out.println("Incorrect login or password, please, try again or sign up.\n" +
+//                    "If you want continue log in, please enter LOG.\n" +
+//                    "If you want sign up, please enter REG");
+//            String str = scanner.nextLine();
+//            if (str.equals("LOG")) {
+//                loginClients(login, password, clientName);
+//            } else {
+//                regNewClients(login, password, clientName);
+//            }
+//        }
     }
 }

@@ -2,22 +2,12 @@ package ru.alexeySapunov.netty.common.dataBase;
 
 import java.sql.*;
 
-public class DBAuthService implements AuthService {
+public class DBAuthService extends Client {
 
     private static Connection connection;
     private static Statement statement;
 
-    public void start() {
-        try {
-            connectBase();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            disconnectBase();
-        }
-    }
-
-    private static void connectBase() throws SQLException {
+    public void connectBase() throws SQLException {
         try {
             Class.forName("org.sqlite.JDBC");
             connection = DriverManager.getConnection("jdbc:sqlite:clientAuth.db");
@@ -31,35 +21,40 @@ public class DBAuthService implements AuthService {
     private static void createTable() throws SQLException {
         statement.executeUpdate("create table if not exists clientAuth (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                "clientName TEXT UNIQUE," +
-                "login  TEXT UNIQUE," +
-                "password TEXT UNIQUE" +
+                "clientName VARCHAR(32) UNIQUE NOT NULL," +
+                "login  VARCHAR(32) UNIQUE NOT NULL," +
+                "password VARCHAR(32) UNIQUE NOT NULL" +
                 ");"
         );
     }
 
-    public void authClients(final String login, final String password) throws SQLException {
+    public ResultSet getClients(Client client) throws SQLException {
+        ResultSet rs = null;
         if (connection != null) {
-            try (final PreparedStatement ps = connection.prepareStatement("SELECT clientName FROM clientAuth WHERE login = ? AND password = ?;")) {
-                ps.setString(1, login);
-                ps.setString(2, password);
-                ps.execute();
+            try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM clientAuth WHERE login = ? AND password = ?;")) {
+                ps.setString(1, client.getLog());
+                ps.setString(2, client.getPass());
+                rs = ps.executeQuery();
+            }
+        }
+        return rs;
+    }
+
+    public void getNewClients(Client client) throws SQLException {
+        if (connection != null) {
+            try (PreparedStatement ps = connection.prepareStatement("INSERT INTO clientAuth(clientName, login, password) VALUES(?, ?, ?);")) {
+                ps.setString(1, client.getName());
+                ps.setString(2, client.getLog());
+                ps.setString(3, client.getPass());
+
+                ps.executeUpdate();
+
+                System.out.print("Client " + client.getName() + " added");
             }
         }
     }
 
-    public String regNewClients(final String login, final String password) throws SQLException {
-        String clientName = "";
-        try (final PreparedStatement ps = connection.prepareStatement("INSERT INTO clientAuth(clientName, login, password) VALUES(?, ?, ?);")) {
-            ps.setString(1, clientName);
-            ps.setString(2, login);
-            ps.setString(3, password);
-            ps.executeUpdate();
-        }
-        return clientName;
-    }
-
-    private static void disconnectBase() {
+    public void disconnectBase() {
         if (statement != null) {
             try {
                 statement.close();
