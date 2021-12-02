@@ -6,12 +6,14 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
+import ru.alexeySapunov.netty.common.dataBase.ScannerAuth;
 import ru.alexeySapunov.netty.common.handler.JsonDecoder;
 import ru.alexeySapunov.netty.common.handler.JsonEncoder;
 import ru.alexeySapunov.netty.common.message.*;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.sql.SQLException;
 
 public class Client {
 
@@ -62,10 +64,13 @@ public class Client {
             System.out.println("Client started");
 
             final ChannelFuture channel = bootstrap.connect("localhost", 9000).sync();
+            new ScannerAuth().signUpNewClients();
             final DownloadFileRequestMessage message = new DownloadFileRequestMessage();
             message.setPath("C:\\Java\\netty\\bigFile.txt");
             channel.channel().writeAndFlush(message);
             channel.channel().closeFuture().sync();
+        } catch (SQLException throwable) {
+            throwable.printStackTrace();
         } finally {
             worker.shutdownGracefully();
         }
