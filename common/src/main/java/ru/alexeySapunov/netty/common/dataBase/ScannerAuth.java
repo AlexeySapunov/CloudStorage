@@ -14,7 +14,13 @@ public class ScannerAuth extends DBClient {
 
         System.out.println("Welcome, please sign up");
 
+        System.out.println("Enter your name: ");
+        String name = scanner.nextLine();
+
+        System.out.println("Enter your login: ");
         String login = scanner.nextLine();
+
+        System.out.println("Enter your password: ");
         String password = scanner.nextLine();
 
         if (!login.equals("") && password.equals("")) {
@@ -22,6 +28,8 @@ public class ScannerAuth extends DBClient {
         } else {
             System.out.println("Please, log in");
         }
+
+        client.setName(name);
 
         try {
             dataBase.getNewClients(client);
