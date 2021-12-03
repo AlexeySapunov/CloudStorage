@@ -2,7 +2,7 @@ package ru.alexeySapunov.netty.common.dataBase;
 
 import java.sql.*;
 
-public class DBAuthService extends Client {
+public class DBAuthService extends DBClient {
 
     private static Connection connection;
     private static Statement statement;
@@ -28,7 +28,7 @@ public class DBAuthService extends Client {
         );
     }
 
-    public ResultSet getClients(Client client) throws SQLException {
+    public ResultSet getClients(DBClient client) throws SQLException {
         ResultSet rs = null;
         if (connection != null) {
             try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM clientAuth WHERE login = ? AND password = ?;")) {
@@ -40,7 +40,7 @@ public class DBAuthService extends Client {
         return rs;
     }
 
-    public void getNewClients(Client client) throws SQLException {
+    public void getNewClients(DBClient client) throws SQLException {
         if (connection != null) {
             try (PreparedStatement ps = connection.prepareStatement("INSERT INTO clientAuth(clientName, login, password) VALUES(?, ?, ?);")) {
                 ps.setString(1, client.getName());

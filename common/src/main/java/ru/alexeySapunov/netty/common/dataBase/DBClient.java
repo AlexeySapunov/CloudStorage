@@ -1,11 +1,11 @@
 package ru.alexeySapunov.netty.common.dataBase;
 
-public class Client {
+public class DBClient {
     private String name;
     private String log;
     private String pass;
 
-    public Client() {
+    public DBClient() {
     }
 
     public String getName() {
