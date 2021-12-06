@@ -1,4 +1,4 @@
-package ru.alexeySapunov.netty.common.dataBase;
+package ru.alexeySapunov.netty.common.logInSignUpService;
 
 import java.sql.*;
 
@@ -8,14 +8,9 @@ public class DBAuthService extends DBClient {
     private static Statement statement;
 
     public void connectBase() throws SQLException {
-        try {
-            Class.forName("org.sqlite.JDBC");
-            connection = DriverManager.getConnection("jdbc:sqlite:clientAuth.db");
-            statement = connection.createStatement();
-            createTable();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+        connection = DriverManager.getConnection("jdbc:sqlite:clientAuth.db");
+        statement = connection.createStatement();
+        createTable();
     }
 
     private static void createTable() throws SQLException {
@@ -48,8 +43,6 @@ public class DBAuthService extends DBClient {
                 ps.setString(3, client.getPass());
 
                 ps.executeUpdate();
-
-                System.out.print("Client " + client.getName() + " added");
             }
         }
     }
