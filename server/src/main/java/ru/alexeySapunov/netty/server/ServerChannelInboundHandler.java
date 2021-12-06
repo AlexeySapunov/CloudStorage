@@ -2,13 +2,20 @@ package ru.alexeySapunov.netty.server;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import ru.alexeySapunov.netty.common.logInSignUpService.DBAuthService;
+import ru.alexeySapunov.netty.common.logInSignUpService.DBClient;
+import ru.alexeySapunov.netty.common.logInSignUpService.LoginClients;
 import ru.alexeySapunov.netty.common.message.*;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.sql.SQLException;
 import java.util.concurrent.Executor;
 
 public class ServerChannelInboundHandler extends SimpleChannelInboundHandler<Message> {
+
+    private final DBAuthService dataBase = new DBAuthService();
+    private DBClient client = new DBClient();
 
     private static final int BUFFER_SIZE = 1024 * 64;
 
@@ -20,6 +27,20 @@ public class ServerChannelInboundHandler extends SimpleChannelInboundHandler<Mes
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) {
+        String name = client.getName();
+        String login = client.getLog();
+        String password = client.getPass();
+
+        client = new DBClient(name, login, password);
+
+        try {
+            dataBase.getNewClients(client);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        ctx.writeAndFlush(client);
+
         System.out.println("Channel is registered");
     }
 
@@ -30,6 +51,19 @@ public class ServerChannelInboundHandler extends SimpleChannelInboundHandler<Mes
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
+
+        String login = client.getLog();
+        String password = client.getPass();
+
+        try {
+            if (!login.equals("") && !password.equals("")) {
+                LoginClients loginClients = new LoginClients(login, password);
+                ctx.writeAndFlush(loginClients);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
         System.out.println("Channel is active");
     }
 
@@ -40,13 +74,13 @@ public class ServerChannelInboundHandler extends SimpleChannelInboundHandler<Mes
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
-        if(msg instanceof TextMessage) {
+        if (msg instanceof TextMessage) {
             TextMessage message = (TextMessage) msg;
             System.out.println("Incoming text message from client: " + message.getText());
             ctx.writeAndFlush(msg);
         }
 
-        if(msg instanceof DateMessage) {
+        if (msg instanceof DateMessage) {
             DateMessage message = (DateMessage) msg;
             System.out.println("Incoming date message from client: " + message.getDate());
             ctx.writeAndFlush(msg);
@@ -55,7 +89,7 @@ public class ServerChannelInboundHandler extends SimpleChannelInboundHandler<Mes
         if (msg instanceof DownloadFileRequestMessage) {
             executor.execute(() -> {
                 var message = (DownloadFileRequestMessage) msg;
-                try(var accessFile = new RandomAccessFile(message.getPath(), "r")) {
+                try (var accessFile = new RandomAccessFile(message.getPath(), "r")) {
                     long fileLength = accessFile.length();
                     do {
                         var position = accessFile.getFilePointer();
