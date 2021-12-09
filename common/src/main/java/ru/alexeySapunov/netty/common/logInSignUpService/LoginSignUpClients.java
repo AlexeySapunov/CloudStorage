@@ -1,5 +1,8 @@
 package ru.alexeySapunov.netty.common.logInSignUpService;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
@@ -7,36 +10,35 @@ import java.util.Scanner;
 public class LoginSignUpClients extends DBClient {
 
     public void loginClients() throws SQLException {
-        try {
-            DBClient client = new DBClient();
-            DBAuthService dataBase = new DBAuthService();
-            Scanner scanner = new Scanner(System.in);
+        System.out.println("Welcome, please login");
+
+        DBClient client = new DBClient();
+        DBAuthService dataBase = new DBAuthService();
+
+        try (var bufferedReader = new BufferedReader(new InputStreamReader(System.in))) {
+            dataBase.connectBase();
 
             System.out.println("Enter your login: ");
-            String log = scanner.nextLine();
+            String log = bufferedReader.readLine();
 
             System.out.println("Enter your password: ");
-            String password = scanner.nextLine();
-            scanner.close();
+            String password = bufferedReader.readLine();
 
             client.setLog(log);
             client.setPass(password);
-            ResultSet result = dataBase.getClients(client);
+            dataBase.getClients(client);
 
-            int counter = 0;
-
-            if (result.next()) {
-                counter++;
-            }
-
-            if (counter >= 1) {
+            if (log.equals(dataBase.getLog())) {
                 System.out.println("Client " + client.getName() + " logged in successfully");
             } else {
                 System.out.println("Incorrect log or password, please sign up");
                 signUpClients();
             }
-        } catch (SQLException throwable) {
+
+        } catch (SQLException | IOException throwable) {
             throwable.printStackTrace();
+        } finally {
+            dataBase.disconnectBase();
         }
     }
 
@@ -44,28 +46,34 @@ public class LoginSignUpClients extends DBClient {
 
         DBClient client = new DBClient();
         DBAuthService dataBase = new DBAuthService();
-        Scanner scanner = new Scanner(System.in);
 
-        System.out.println("Enter your name: ");
-        String name = scanner.nextLine();
+        try (var bufferedReader = new BufferedReader(new InputStreamReader(System.in))) {
+            dataBase.connectBase();
 
-        System.out.println("Enter your login: ");
-        String log = scanner.nextLine();
+            System.out.println("Enter your name: ");
+            String name = bufferedReader.readLine();
 
-        System.out.println("Enter your password: ");
-        String password = scanner.nextLine();
-        scanner.close();
+            System.out.println("Enter your login: ");
+            String log = bufferedReader.readLine();
 
-        client.setName(name);
-        client.setLog(log);
-        client.setPass(password);
+            System.out.println("Enter your password: ");
+            String password = bufferedReader.readLine();
 
-        if (name.equals(dataBase.getName())) {
-            System.out.println("This client name " + client.getName() + " is busy, please login");
-            loginClients();
-        } else {
-            dataBase.getNewClients(client);
-            System.out.println("Client " + client.getName() + " is registered");
+            client.setName(name);
+            client.setLog(log);
+            client.setPass(password);
+
+            if (name.equals(dataBase.getName())) {
+                System.out.println("This client name " + client.getName() + " is busy, please login");
+                loginClients();
+            } else {
+                dataBase.getNewClients(client);
+                System.out.println("Client " + client.getName() + " is registered");
+            }
+        } catch (SQLException | IOException e) {
+            e.printStackTrace();
+        } finally {
+            dataBase.disconnectBase();
         }
     }
 }

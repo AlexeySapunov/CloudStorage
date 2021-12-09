@@ -9,24 +9,21 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import ru.alexeySapunov.netty.common.logInSignUpService.DBAuthService;
 import ru.alexeySapunov.netty.common.handler.JsonDecoder;
 import ru.alexeySapunov.netty.common.handler.JsonEncoder;
 
-import java.sql.SQLException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Server {
-    public static void main(String[] args) throws InterruptedException, SQLException {
+    public static void main(String[] args) throws InterruptedException {
         new Server().run();
     }
 
-    private void run() throws InterruptedException, SQLException {
+    private void run() throws InterruptedException {
         NioEventLoopGroup bossGroup = new NioEventLoopGroup();
         NioEventLoopGroup workersGroup = new NioEventLoopGroup();
         ExecutorService threadPool = Executors.newCachedThreadPool();
-        DBAuthService authService = new DBAuthService();
 
         try {
             ServerBootstrap serverBootstrap = new ServerBootstrap()
@@ -49,14 +46,11 @@ public class Server {
 
             Channel channel = serverBootstrap.bind(9000).sync().channel();
             System.out.println("Server started");
-            authService.connectBase();
-            System.out.println("DataBase connected");
             channel.closeFuture().sync();
         } finally {
             bossGroup.shutdownGracefully();
             workersGroup.shutdownGracefully();
             threadPool.shutdownNow();
-            authService.disconnectBase();
         }
     }
 }
