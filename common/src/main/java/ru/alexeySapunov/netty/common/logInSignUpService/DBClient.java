@@ -1,9 +1,14 @@
 package ru.alexeySapunov.netty.common.logInSignUpService;
 
-public class DBClient {
+import ru.alexeySapunov.netty.common.message.Message;
+
+public class DBClient extends Message {
     private String name;
     private String log;
     private String pass;
+
+    public DBClient() {
+    }
 
     public DBClient(String name, String log, String pass) {
         this.name = name;
@@ -11,7 +16,8 @@ public class DBClient {
         this.pass = pass;
     }
 
-    public DBClient() {
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getName() {

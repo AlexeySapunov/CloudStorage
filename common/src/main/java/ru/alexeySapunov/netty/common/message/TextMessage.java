@@ -2,9 +2,9 @@ package ru.alexeySapunov.netty.common.message;
 
 public class TextMessage extends Message {
 
-    private final String text;
+    private String text;
 
-    public TextMessage(String text) {
+    public void setText(String text) {
         this.text = text;
     }
 
