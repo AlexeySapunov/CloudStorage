@@ -9,7 +9,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import ru.alexeySapunov.netty.common.dataBase.DBAuthService;
+import ru.alexeySapunov.netty.common.logInSignUpService.DBAuthService;
 import ru.alexeySapunov.netty.common.handler.JsonDecoder;
 import ru.alexeySapunov.netty.common.handler.JsonEncoder;
 
@@ -25,8 +25,8 @@ public class Server {
     private void run() throws InterruptedException, SQLException {
         NioEventLoopGroup bossGroup = new NioEventLoopGroup();
         NioEventLoopGroup workersGroup = new NioEventLoopGroup();
-        final ExecutorService threadPool = Executors.newCachedThreadPool();
-        final DBAuthService authService = new DBAuthService();
+        ExecutorService threadPool = Executors.newCachedThreadPool();
+        DBAuthService authService = new DBAuthService();
 
         try {
             ServerBootstrap serverBootstrap = new ServerBootstrap()
@@ -47,7 +47,7 @@ public class Server {
                     .option(ChannelOption.SO_BACKLOG, 128)
                     .childOption(ChannelOption.SO_KEEPALIVE, true);
 
-            final Channel channel = serverBootstrap.bind(9000).sync().channel();
+            Channel channel = serverBootstrap.bind(9000).sync().channel();
             System.out.println("Server started");
             authService.connectBase();
             System.out.println("DataBase connected");

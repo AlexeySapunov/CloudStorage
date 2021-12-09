@@ -1,23 +1,25 @@
 package ru.alexeySapunov.netty.server;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import ru.alexeySapunov.netty.common.logInSignUpService.DBAuthService;
-import ru.alexeySapunov.netty.common.logInSignUpService.DBClient;
-import ru.alexeySapunov.netty.common.logInSignUpService.LoginClients;
+import ru.alexeySapunov.netty.common.logInSignUpService.LoginSignUpClients;
 import ru.alexeySapunov.netty.common.message.*;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executor;
 
 public class ServerChannelInboundHandler extends SimpleChannelInboundHandler<Message> {
 
-    private final DBAuthService dataBase = new DBAuthService();
-    private DBClient client = new DBClient();
-
     private static final int BUFFER_SIZE = 1024 * 64;
+
+    private static final List<Channel> channels = new ArrayList<>();
+    private static int newClientIndex = 1;
+    private String clientName;
 
     private final Executor executor;
 
@@ -27,20 +29,6 @@ public class ServerChannelInboundHandler extends SimpleChannelInboundHandler<Mes
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) {
-        String name = client.getName();
-        String login = client.getLog();
-        String password = client.getPass();
-
-        client = new DBClient(name, login, password);
-
-        try {
-            dataBase.getNewClients(client);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        ctx.writeAndFlush(client);
-
         System.out.println("Channel is registered");
     }
 
@@ -51,29 +39,42 @@ public class ServerChannelInboundHandler extends SimpleChannelInboundHandler<Mes
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
+        System.out.println("Client connected: " + ctx);
+        channels.add(ctx.channel());
+        clientName = "Client #" + newClientIndex;
+        newClientIndex++;
+        broadcastMessage("SERVER", "New client connected: " + clientName);
+    }
 
-        String login = client.getLog();
-        String password = client.getPass();
-
-        try {
-            if (!login.equals("") && !password.equals("")) {
-                LoginClients loginClients = new LoginClients(login, password);
-                ctx.writeAndFlush(loginClients);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
+    public void broadcastMessage(String clientName, String message) {
+        String out = String.format("[%s]: %s\n", clientName, message);
+        for (Channel c : channels) {
+            c.writeAndFlush(out);
         }
-
-        System.out.println("Channel is active");
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        System.out.println("Channel is inactive");
+        channels.remove(ctx.channel());
+        broadcastMessage("SERVER", "Client " + clientName + " is Inactive");
+        ctx.close();
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
+        if (msg instanceof LoginSignUpClients) {
+            LoginSignUpClients message = (LoginSignUpClients) msg;
+            System.out.println("New client " + message.getName() + " is ready");
+            try{
+                LoginSignUpClients clients = new LoginSignUpClients();
+                clients.loginClients();
+            } catch (SQLException e) {
+                exceptionCaught(ctx, e);
+            }
+
+            ctx.writeAndFlush(msg);
+        }
+
         if (msg instanceof TextMessage) {
             TextMessage message = (TextMessage) msg;
             System.out.println("Incoming text message from client: " + message.getText());
@@ -123,7 +124,8 @@ public class ServerChannelInboundHandler extends SimpleChannelInboundHandler<Mes
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        System.out.println("Catch cause" + cause.getMessage());
+        channels.remove(ctx.channel());
+        broadcastMessage("SERVER", "Client " + clientName + " is Inactive");
         ctx.close();
     }
 }
