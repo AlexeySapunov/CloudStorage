@@ -11,7 +11,9 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import ru.alexeySapunov.netty.common.handler.JsonDecoder;
 import ru.alexeySapunov.netty.common.handler.JsonEncoder;
+import ru.alexeySapunov.netty.common.logInSignUpService.DataBase;
 
+import java.sql.SQLException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -24,6 +26,7 @@ public class Server {
         NioEventLoopGroup bossGroup = new NioEventLoopGroup();
         NioEventLoopGroup workersGroup = new NioEventLoopGroup();
         ExecutorService threadPool = Executors.newCachedThreadPool();
+        DataBase dataBase = new DataBase();
 
         try {
             ServerBootstrap serverBootstrap = new ServerBootstrap()
@@ -46,8 +49,14 @@ public class Server {
 
             Channel channel = serverBootstrap.bind(9000).sync().channel();
             System.out.println("Server started");
+            dataBase.connectBase();
+            System.out.println("Data base connected");
+
             channel.closeFuture().sync();
+        } catch (SQLException throwable) {
+            throwable.printStackTrace();
         } finally {
+            dataBase.disconnectBase();
             bossGroup.shutdownGracefully();
             workersGroup.shutdownGracefully();
             threadPool.shutdownNow();
