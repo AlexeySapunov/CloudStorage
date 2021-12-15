@@ -17,6 +17,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
+import java.util.Date;
 
 public class Client {
 
@@ -47,17 +48,20 @@ public class Client {
 
                                             if (msg instanceof SignUpClient) {
                                                 System.out.println(((SignUpClient) msg).getName() + " successfully registered!");
-
                                             }
 
                                             if (msg instanceof AuthService) {
                                                 var message = (AuthService) msg;
-                                                System.out.println("Something went wrong, please, try again!");
+                                                System.out.println("Lets try log in!");
                                                 message.login();
                                             }
 
                                             if (msg instanceof TextMessage) {
                                                 System.out.println("Receive message " + ((TextMessage) msg).getText());
+                                            }
+
+                                            if (msg instanceof DateMessage) {
+                                                System.out.println("Receive message " + ((DateMessage) msg).getDate());
                                             }
 
                                             if (msg instanceof FileMessage) {
@@ -91,22 +95,27 @@ public class Client {
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             AuthService service = new AuthService();
+
             System.out.println("Welcome, please, make your choice\n" +
                     "If you want log in, please enter LOG\n" +
                     "If you want sign up, please enter REG");
             String choice = reader.readLine();
+
             if (choice.equals("LOG")) {
                 channel.channel().writeAndFlush(service.login());
-            } else if (choice.equals("REG")){
+            } else if (choice.equals("REG")) {
                 channel.channel().writeAndFlush(service.signUp());
             } else {
-                System.out.println("Incorrect input, please enter LOG or REG");
-                reader.readLine();
+                System.out.println("Incorrect input, please try again later");
+                channel.channel().closeFuture().sync();
             }
 
             TextMessage textMessage = new TextMessage();
             textMessage.setText("New client connected");
             channel.channel().writeAndFlush(textMessage);
+
+            DateMessage dateMessage = new DateMessage(new Date());
+            channel.channel().writeAndFlush(dateMessage.getDate());
 
             DownloadFileRequestMessage message = new DownloadFileRequestMessage();
             message.setPath("C:\\Java\\netty\\bigFile.txt");

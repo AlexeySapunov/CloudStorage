@@ -16,9 +16,9 @@ public class DataBase {
     private static void createTable() throws SQLException {
                 statement.executeUpdate("create table if not exists clientAuth (\n" +
                         "    id INTEGER PRIMARY KEY AUTOINCREMENT,\n" +
-                        "    clientName VARCHAR(32) UNIQUE NOT NULL,\n" +
-                        "    login  VARCHAR(32) UNIQUE NOT NULL,\n" +
-                        "    password VARCHAR(32) UNIQUE NOT NULL);");
+                        "    clientName VARCHAR(32) NOT NULL,\n" +
+                        "    login  VARCHAR(32) NOT NULL,\n" +
+                        "    password VARCHAR(32) NOT NULL);");
     }
 
     public String getClients(LoginClient client) throws SQLException {
